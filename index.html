@@ -1,0 +1,485 @@
+import React, { useState } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
+import { Globe, TrendingUp, Users, Leaf, Target, BookOpen, Menu, ShieldCheck } from 'lucide-react';
+
+// --- Data Constants ---
+const INFLATION_DATA = [
+    { country: "Sudan", rate: 119, color: "#ef4444" }, // Red for crisis
+    { country: "Iran", rate: 29, color: "#f97316" },  // Orange for high
+    { country: "Egypt", rate: 21, color: "#f59e0b" },  // Amber for warning
+    { country: "Yemen", rate: 20, color: "#f59e0b" },
+    { country: "GCC Avg", rate: 2.5, color: "#10b981" } // Green for stable
+];
+
+const UNEMPLOYMENT_DATA = [
+    { name: "Young Women (Jordan)", value: 66, fill: "#db2777" },
+    { name: "Youth (Jordan)", value: 46, fill: "#ec4899" },
+    { name: "MENA Avg", value: 19.6, fill: "#6366f1" },
+    { name: "GCC Avg", value: 5, fill: "#10b981" },
+];
+
+const GDP_TRANSITION_DATA = [
+    { name: "Non-Oil Sector", value: 73.2, fill: "#0ea5e9" },
+    { name: "Oil Sector", value: 26.8, fill: "#64748b" },
+];
+
+const INVESTMENT_DATA = [
+    { name: '2023', value: 173 },
+    { name: '2024', value: 442 }
+];
+
+// --- Helper Components ---
+
+const StatCard = ({ title, value, subtitle, trend, icon: Icon, colorClass }) => (
+    <div className="bg-white/90 backdrop-blur-md border border-white/20 shadow-sm p-6 rounded-xl hover:scale-105 transition-all duration-300">
+        <div className="flex justify-between items-start">
+            <div>
+                <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
+                <h3 className="text-2xl font-bold text-slate-800">{value}</h3>
+                <p className={`text-xs mt-2 font-medium ${trend === 'up' ? 'text-emerald-600' : trend === 'down' ? 'text-rose-600' : 'text-slate-400'}`}>
+                    {subtitle}
+                </p>
+            </div>
+            <div className={`p-3 rounded-lg ${colorClass} bg-opacity-10`}>
+                <Icon className={`w-6 h-6 ${colorClass.replace('bg-', 'text-')}`} />
+            </div>
+        </div>
+    </div>
+);
+
+const TimelineItem = ({ year, title, description, color }) => (
+    <div className="relative pl-8 pb-8 border-l-2 border-slate-200 last:border-l-0 animate-fade-in">
+        <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full ${color} border-4 border-white shadow-sm`}></div>
+        <div className="mb-1 text-xs font-bold text-slate-400 uppercase tracking-wider">{year}</div>
+        <h4 className="text-lg font-bold text-slate-800 mb-2">{title}</h4>
+        <p className="text-slate-600 text-sm leading-relaxed">{description}</p>
+    </div>
+);
+
+const CompetencyCard = ({ title, icon: Icon, description, tags }) => (
+    <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+        <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                <Icon size={20} />
+            </div>
+            <h3 className="font-bold text-slate-800">{title}</h3>
+        </div>
+        <p className="text-sm text-slate-600 mb-4">{description}</p>
+        <div className="flex flex-wrap gap-2">
+            {tags.map((tag, i) => (
+                <span key={i} className="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded-full">{tag}</span>
+            ))}
+        </div>
+    </div>
+);
+
+// --- Main Component ---
+
+export default function App() {
+    const [activeTab, setActiveTab] = useState('overview');
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    const renderContent = () => {
+        switch(activeTab) {
+            case 'overview':
+                return (
+                    <div className="space-y-6 animate-in fade-in duration-500">
+                        {/* Header Stats */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <StatCard 
+                                title="Regional Growth (2025)" 
+                                value="3.0%" 
+                                subtitle="Modest Expansion" 
+                                trend="neutral"
+                                icon={TrendingUp}
+                                colorClass="bg-blue-500"
+                            />
+                            <StatCard 
+                                title="GCC Non-Oil GDP" 
+                                value="73.2%" 
+                                subtitle="Up from 70.6% in 2024" 
+                                trend="up"
+                                icon={ShieldCheck}
+                                colorClass="bg-emerald-500"
+                            />
+                            <StatCard 
+                                title="MENA Youth Unemp." 
+                                value="19.6%" 
+                                subtitle="Highest Globally" 
+                                trend="down"
+                                icon={Users}
+                                colorClass="bg-rose-500"
+                            />
+                            <StatCard 
+                                title="ESG Adoption" 
+                                value="80%" 
+                                subtitle="+16% YoY Growth" 
+                                trend="up"
+                                icon={Leaf}
+                                colorClass="bg-teal-500"
+                            />
+                        </div>
+
+                        {/* Main Charts Row */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div className="bg-white/90 backdrop-blur-md border border-white/20 shadow-sm p-6 rounded-xl">
+                                <h3 className="text-lg font-bold text-slate-800 mb-4">Inflation Divergence (2024-25)</h3>
+                                <div className="h-64">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={INFLATION_DATA} layout="vertical" margin={{ left: 40 }}>
+                                            <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                                            <XAxis type="number" unit="%" />
+                                            <YAxis dataKey="country" type="category" width={60} />
+                                            <Tooltip 
+                                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                                cursor={{fill: 'transparent'}}
+                                            />
+                                            <Bar dataKey="rate" radius={[0, 4, 4, 0]}>
+                                                {INFLATION_DATA.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                                ))}
+                                            </Bar>
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                <p className="text-xs text-slate-500 mt-4 italic">
+                                    High disparity creates complex operating environments for cross-border firms.
+                                </p>
+                            </div>
+
+                            <div className="bg-white/90 backdrop-blur-md border border-white/20 shadow-sm p-6 rounded-xl">
+                                <h3 className="text-lg font-bold text-slate-800 mb-4">Unemployment Crisis</h3>
+                                <div className="h-64">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={UNEMPLOYMENT_DATA}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                            <XAxis dataKey="name" tick={{fontSize: 10}} interval={0} />
+                                            <YAxis unit="%" />
+                                            <Tooltip 
+                                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                            />
+                                            <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                                                {UNEMPLOYMENT_DATA.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                                                ))}
+                                            </Bar>
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                <p className="text-xs text-slate-500 mt-4 italic">
+                                    Jordan's female youth unemployment (66%) highlights massive untapped potential.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            
+            case 'transition':
+                return (
+                    <div className="space-y-6 animate-in fade-in duration-500">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            {/* GCC GDP Split */}
+                            <div className="bg-white/90 backdrop-blur-md border border-white/20 shadow-sm p-6 rounded-xl col-span-1">
+                                <h3 className="text-lg font-bold text-slate-800 mb-2">GCC GDP Structure</h3>
+                                <p className="text-sm text-slate-500 mb-4">Successful diversification away from Oil</p>
+                                <div className="h-64">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={GDP_TRANSITION_DATA}
+                                                innerRadius={60}
+                                                outerRadius={80}
+                                                paddingAngle={5}
+                                                dataKey="value"
+                                            >
+                                                {GDP_TRANSITION_DATA.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip />
+                                            <Legend verticalAlign="bottom" height={36}/>
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                <div className="text-center mt-2">
+                                    <span className="text-3xl font-bold text-sky-500">73.2%</span>
+                                    <span className="text-sm text-slate-500 block">Non-Oil Sector Share</span>
+                                </div>
+                            </div>
+
+                            {/* Investment Surge */}
+                            <div className="bg-white/90 backdrop-blur-md border border-white/20 shadow-sm p-6 rounded-xl col-span-2">
+                                <div className="flex justify-between items-center mb-4">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-slate-800">Energy Sector Investment</h3>
+                                        <p className="text-sm text-slate-500">Significant capital flow into clean energy</p>
+                                    </div>
+                                    <div className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-bold">
+                                        +156% Growth
+                                    </div>
+                                </div>
+                                <div className="h-64">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={INVESTMENT_DATA}>
+                                            <defs>
+                                                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                            <XAxis dataKey="name" />
+                                            <YAxis unit="M" />
+                                            <Tooltip />
+                                            <Area type="monotone" dataKey="value" stroke="#10b981" fillOpacity={1} fill="url(#colorValue)" />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Sustainability Strategy */}
+                        <div className="bg-white/90 backdrop-blur-md border border-white/20 shadow-sm p-6 rounded-xl">
+                            <h3 className="text-lg font-bold text-slate-800 mb-6">Corporate Sustainability Integration</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                <div className="relative pt-4">
+                                    <div className="text-sm text-slate-500 mb-2">ESG Adoption Rate</div>
+                                    <div className="w-full bg-slate-100 rounded-full h-4 overflow-hidden">
+                                        <div className="bg-teal-500 h-full rounded-full transition-all duration-1000" style={{width: '80%'}}></div>
+                                    </div>
+                                    <div className="flex justify-between mt-2 text-xs font-medium text-slate-600">
+                                        <span>2023: 64%</span>
+                                        <span className="text-teal-600">2024: 80%</span>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="text-sm font-bold text-slate-700">Key Drivers</div>
+                                    <div className="flex flex-wrap gap-2">
+                                        <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs border border-blue-100">Mandatory Reporting</span>
+                                        <span className="px-2 py-1 bg-purple-50 text-purple-600 rounded text-xs border border-purple-100">Access to Capital</span>
+                                        <span className="px-2 py-1 bg-orange-50 text-orange-600 rounded text-xs border border-orange-100">Talent Retention</span>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="text-sm font-bold text-slate-700">Strategic Actions</div>
+                                    <ul className="text-xs text-slate-600 space-y-1 list-disc pl-4">
+                                        <li>Green Bond Issuance ($16.7B)</li>
+                                        <li>Supply Chain Decarbonization</li>
+                                        <li>Social Impact Partnerships</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+
+            case 'leadership':
+                return (
+                    <div className="space-y-6 animate-in fade-in duration-500">
+                        <div className="bg-gradient-to-r from-indigo-600 to-blue-600 rounded-xl p-8 text-white mb-6">
+                            <h2 className="text-2xl font-bold mb-2">Future Leadership Framework</h2>
+                            <p className="opacity-90 max-w-2xl">
+                                The region requires a shift from traditional hierarchical management to an adaptive, resilient, and value-driven approach.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <CompetencyCard 
+                                title="Adaptive Resilience" 
+                                icon={ShieldCheck}
+                                description="Capacity to thrive amidst geopolitical shocks and market volatility. Viewing failure as data for improvement."
+                                tags={['Crisis Management', 'Psychological Stamina', 'Flexibility']}
+                            />
+                            <CompetencyCard 
+                                title="Cross-Cultural Fluency" 
+                                icon={Globe}
+                                description="Navigating 'high-context' communication and diverse expatriate workforces (Asia, Europe, NA)."
+                                tags={['Cultural Intelligence', 'Inclusive Teaming', 'Nuance']}
+                            />
+                            <CompetencyCard 
+                                title="Sustainability Literacy" 
+                                icon={Leaf}
+                                description="Deep understanding of ESG metrics and their correlation with financial performance and risk."
+                                tags={['ESG Reporting', 'Circular Economy', 'Long-term Value']}
+                            />
+                            <CompetencyCard 
+                                title="Systems Thinking" 
+                                icon={Target}
+                                description="Understanding interconnections, e.g., how water scarcity impacts social stability and political legitimacy."
+                                tags={['Root Cause Analysis', 'Holistic View', 'Complexity']}
+                            />
+                            <CompetencyCard 
+                                title="Strategic Foresight" 
+                                icon={BookOpen}
+                                description="Anticipating technological disruptions (AI) and pivoting business models before markets shift."
+                                tags={['Innovation', 'Scenario Planning', 'Digital Transformation']}
+                            />
+                        </div>
+                    </div>
+                );
+
+            case 'plan':
+                return (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
+                        <div className="col-span-1 lg:col-span-2">
+                            <div className="bg-white/90 backdrop-blur-md border border-white/20 shadow-sm p-8 rounded-xl">
+                                <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                    <Target className="text-indigo-600" />
+                                    Personal Development Roadmap
+                                </h3>
+                                <div className="space-y-0">
+                                    <TimelineItem 
+                                        year="Years 1-2"
+                                        title="Foundation & Certification"
+                                        description="Complete specialized certifications (GRI Standards/LEED). Engage in executive education focused on Middle East business practices. Attend Abu Dhabi Sustainability Week."
+                                        color="bg-blue-500"
+                                    />
+                                    <TimelineItem 
+                                        year="Years 2-3"
+                                        title="Experiential Expansion"
+                                        description="Seek diverse stakeholder projects. Volunteer for ESG committees. Build cross-sector networks across government and corporate entities."
+                                        color="bg-indigo-500"
+                                    />
+                                    <TimelineItem 
+                                        year="Years 3-5"
+                                        title="Cultural Immersion & Leadership"
+                                        description="Commit to conversational Arabic fluency. Undertake cultural immersion in different regional hubs. Mentor younger professionals."
+                                        color="bg-purple-500"
+                                    />
+                                    <TimelineItem 
+                                        year="Year 5+"
+                                        title="Thought Leadership"
+                                        description="Publish articles on renewable energy transition. Establish self as a domain expert in sustainable regional development."
+                                        color="bg-teal-500"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="col-span-1 space-y-6">
+                            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                                <h4 className="font-bold text-slate-800 mb-4">Accountability Metrics</h4>
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                                        <span className="text-sm text-slate-600">Quarterly Self-Assessments</span>
+                                        <ShieldCheck className="text-green-500 w-4 h-4" />
+                                    </div>
+                                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                                        <span className="text-sm text-slate-600">Annual Mentor Feedback</span>
+                                        <Users className="text-blue-500 w-4 h-4" />
+                                    </div>
+                                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                                        <span className="text-sm text-slate-600">Certification Tracking</span>
+                                        <BookOpen className="text-purple-500 w-4 h-4" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-indigo-600 p-6 rounded-xl shadow-lg text-white">
+                                <h4 className="font-bold mb-2">Core Philosophy</h4>
+                                <p className="text-sm opacity-90 italic">
+                                    "Leading with integrity and purpose in service of a more prosperous, sustainable, and equitable Middle East."
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                );
+        }
+    };
+
+    return (
+        <div className="flex h-screen bg-slate-50 overflow-hidden">
+            {/* Sidebar Desktop */}
+            <div className="hidden md:flex flex-col w-64 bg-slate-900 text-white shadow-xl z-10">
+                <div className="p-6 border-b border-slate-800">
+                    <h1 className="font-bold text-lg tracking-tight">Leading in Transition</h1>
+                    <p className="text-xs text-slate-400 mt-1">Middle East Strategy</p>
+                </div>
+                <nav className="flex-1 p-4 space-y-2">
+                    {[
+                        { id: 'overview', label: 'Regional Context', icon: Globe },
+                        { id: 'transition', label: 'Energy & ESG', icon: Leaf },
+                        { id: 'leadership', label: 'Competencies', icon: Users },
+                        { id: 'plan', label: 'Action Plan', icon: Target },
+                    ].map(item => (
+                        <button
+                            key={item.id}
+                            onClick={() => setActiveTab(item.id)}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                                activeTab === item.id 
+                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50' 
+                                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                            }`}
+                        >
+                            <item.icon size={18} />
+                            <span className="text-sm font-medium">{item.label}</span>
+                        </button>
+                    ))}
+                </nav>
+                <div className="p-4 border-t border-slate-800">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-xs">S</div>
+                        <div>
+                            <p className="text-xs font-bold text-white">Student Dashboard</p>
+                            <p className="text-[10px] text-slate-400">Reflective Assignment</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <div className="md:hidden fixed top-4 right-4 z-50">
+                <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 bg-slate-900 text-white rounded-lg shadow-lg">
+                    <Menu size={24} />
+                </button>
+            </div>
+
+            {/* Mobile Nav Overlay */}
+            {mobileMenuOpen && (
+                <div className="md:hidden fixed inset-0 bg-slate-900 z-40 p-6 pt-20 space-y-4">
+                        {[
+                        { id: 'overview', label: 'Regional Context', icon: Globe },
+                        { id: 'transition', label: 'Energy & ESG', icon: Leaf },
+                        { id: 'leadership', label: 'Competencies', icon: Users },
+                        { id: 'plan', label: 'Action Plan', icon: Target },
+                    ].map(item => (
+                        <button
+                            key={item.id}
+                            onClick={() => { setActiveTab(item.id); setMobileMenuOpen(false); }}
+                            className={`w-full flex items-center gap-3 px-4 py-4 rounded-lg text-left ${
+                                activeTab === item.id ? 'bg-indigo-600 text-white' : 'text-slate-400'
+                            }`}
+                        >
+                            <item.icon size={20} />
+                            <span className="text-lg">{item.label}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {/* Main Content */}
+            <main className="flex-1 overflow-auto p-4 md:p-8 lg:p-10">
+                <div className="max-w-6xl mx-auto pb-20">
+                    <header className="mb-8">
+                        <h2 className="text-3xl font-bold text-slate-800">
+                            {activeTab === 'overview' && 'Regional Context & Challenges'}
+                            {activeTab === 'transition' && 'Energy Transition & Diversification'}
+                            {activeTab === 'leadership' && 'Leadership Framework'}
+                            {activeTab === 'plan' && 'Personal Development Roadmap'}
+                        </h2>
+                        <p className="text-slate-500 mt-2">
+                            {activeTab === 'overview' && 'Analyzing economic fragmentation and demographic shifts.'}
+                            {activeTab === 'transition' && 'Tracking the shift from hydrocarbon dependence to sustainable growth.'}
+                            {activeTab === 'leadership' && 'Defining the essential skills for the next generation of leaders.'}
+                            {activeTab === 'plan' && 'Strategic steps for professional growth (Years 1-5).'}
+                        </p>
+                    </header>
+                    
+                    {renderContent()}
+
+                    <footer className="mt-12 pt-8 border-t border-slate-200 text-center text-xs text-slate-400">
+                        <p>Data Sources: World Bank, PwC, Wilson Center, Economic Research Forum (2024-2025)</p>
+                    </footer>
+                </div>
+            </main>
+        </div>
+    );
+}
