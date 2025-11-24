@@ -1,485 +1,1254 @@
-import React, { useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
-import { Globe, TrendingUp, Users, Leaf, Target, BookOpen, Menu, ShieldCheck } from 'lucide-react';
-
-// --- Data Constants ---
-const INFLATION_DATA = [
-    { country: "Sudan", rate: 119, color: "#ef4444" }, // Red for crisis
-    { country: "Iran", rate: 29, color: "#f97316" },  // Orange for high
-    { country: "Egypt", rate: 21, color: "#f59e0b" },  // Amber for warning
-    { country: "Yemen", rate: 20, color: "#f59e0b" },
-    { country: "GCC Avg", rate: 2.5, color: "#10b981" } // Green for stable
-];
-
-const UNEMPLOYMENT_DATA = [
-    { name: "Young Women (Jordan)", value: 66, fill: "#db2777" },
-    { name: "Youth (Jordan)", value: 46, fill: "#ec4899" },
-    { name: "MENA Avg", value: 19.6, fill: "#6366f1" },
-    { name: "GCC Avg", value: 5, fill: "#10b981" },
-];
-
-const GDP_TRANSITION_DATA = [
-    { name: "Non-Oil Sector", value: 73.2, fill: "#0ea5e9" },
-    { name: "Oil Sector", value: 26.8, fill: "#64748b" },
-];
-
-const INVESTMENT_DATA = [
-    { name: '2023', value: 173 },
-    { name: '2024', value: 442 }
-];
-
-// --- Helper Components ---
-
-const StatCard = ({ title, value, subtitle, trend, icon: Icon, colorClass }) => (
-    <div className="bg-white/90 backdrop-blur-md border border-white/20 shadow-sm p-6 rounded-xl hover:scale-105 transition-all duration-300">
-        <div className="flex justify-between items-start">
-            <div>
-                <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
-                <h3 className="text-2xl font-bold text-slate-800">{value}</h3>
-                <p className={`text-xs mt-2 font-medium ${trend === 'up' ? 'text-emerald-600' : trend === 'down' ? 'text-rose-600' : 'text-slate-400'}`}>
-                    {subtitle}
-                </p>
-            </div>
-            <div className={`p-3 rounded-lg ${colorClass} bg-opacity-10`}>
-                <Icon className={`w-6 h-6 ${colorClass.replace('bg-', 'text-')}`} />
-            </div>
-        </div>
-    </div>
-);
-
-const TimelineItem = ({ year, title, description, color }) => (
-    <div className="relative pl-8 pb-8 border-l-2 border-slate-200 last:border-l-0 animate-fade-in">
-        <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full ${color} border-4 border-white shadow-sm`}></div>
-        <div className="mb-1 text-xs font-bold text-slate-400 uppercase tracking-wider">{year}</div>
-        <h4 className="text-lg font-bold text-slate-800 mb-2">{title}</h4>
-        <p className="text-slate-600 text-sm leading-relaxed">{description}</p>
-    </div>
-);
-
-const CompetencyCard = ({ title, icon: Icon, description, tags }) => (
-    <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-        <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
-                <Icon size={20} />
-            </div>
-            <h3 className="font-bold text-slate-800">{title}</h3>
-        </div>
-        <p className="text-sm text-slate-600 mb-4">{description}</p>
-        <div className="flex flex-wrap gap-2">
-            {tags.map((tag, i) => (
-                <span key={i} className="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded-full">{tag}</span>
-            ))}
-        </div>
-    </div>
-);
-
-// --- Main Component ---
-
-export default function App() {
-    const [activeTab, setActiveTab] = useState('overview');
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-    const renderContent = () => {
-        switch(activeTab) {
-            case 'overview':
-                return (
-                    <div className="space-y-6 animate-in fade-in duration-500">
-                        {/* Header Stats */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <StatCard 
-                                title="Regional Growth (2025)" 
-                                value="3.0%" 
-                                subtitle="Modest Expansion" 
-                                trend="neutral"
-                                icon={TrendingUp}
-                                colorClass="bg-blue-500"
-                            />
-                            <StatCard 
-                                title="GCC Non-Oil GDP" 
-                                value="73.2%" 
-                                subtitle="Up from 70.6% in 2024" 
-                                trend="up"
-                                icon={ShieldCheck}
-                                colorClass="bg-emerald-500"
-                            />
-                            <StatCard 
-                                title="MENA Youth Unemp." 
-                                value="19.6%" 
-                                subtitle="Highest Globally" 
-                                trend="down"
-                                icon={Users}
-                                colorClass="bg-rose-500"
-                            />
-                            <StatCard 
-                                title="ESG Adoption" 
-                                value="80%" 
-                                subtitle="+16% YoY Growth" 
-                                trend="up"
-                                icon={Leaf}
-                                colorClass="bg-teal-500"
-                            />
-                        </div>
-
-                        {/* Main Charts Row */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="bg-white/90 backdrop-blur-md border border-white/20 shadow-sm p-6 rounded-xl">
-                                <h3 className="text-lg font-bold text-slate-800 mb-4">Inflation Divergence (2024-25)</h3>
-                                <div className="h-64">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={INFLATION_DATA} layout="vertical" margin={{ left: 40 }}>
-                                            <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                                            <XAxis type="number" unit="%" />
-                                            <YAxis dataKey="country" type="category" width={60} />
-                                            <Tooltip 
-                                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                                                cursor={{fill: 'transparent'}}
-                                            />
-                                            <Bar dataKey="rate" radius={[0, 4, 4, 0]}>
-                                                {INFLATION_DATA.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                                ))}
-                                            </Bar>
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
-                                <p className="text-xs text-slate-500 mt-4 italic">
-                                    High disparity creates complex operating environments for cross-border firms.
-                                </p>
-                            </div>
-
-                            <div className="bg-white/90 backdrop-blur-md border border-white/20 shadow-sm p-6 rounded-xl">
-                                <h3 className="text-lg font-bold text-slate-800 mb-4">Unemployment Crisis</h3>
-                                <div className="h-64">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={UNEMPLOYMENT_DATA}>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                            <XAxis dataKey="name" tick={{fontSize: 10}} interval={0} />
-                                            <YAxis unit="%" />
-                                            <Tooltip 
-                                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                                            />
-                                            <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                                                {UNEMPLOYMENT_DATA.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                                                ))}
-                                            </Bar>
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
-                                <p className="text-xs text-slate-500 mt-4 italic">
-                                    Jordan's female youth unemployment (66%) highlights massive untapped potential.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                );
-            
-            case 'transition':
-                return (
-                    <div className="space-y-6 animate-in fade-in duration-500">
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            {/* GCC GDP Split */}
-                            <div className="bg-white/90 backdrop-blur-md border border-white/20 shadow-sm p-6 rounded-xl col-span-1">
-                                <h3 className="text-lg font-bold text-slate-800 mb-2">GCC GDP Structure</h3>
-                                <p className="text-sm text-slate-500 mb-4">Successful diversification away from Oil</p>
-                                <div className="h-64">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie
-                                                data={GDP_TRANSITION_DATA}
-                                                innerRadius={60}
-                                                outerRadius={80}
-                                                paddingAngle={5}
-                                                dataKey="value"
-                                            >
-                                                {GDP_TRANSITION_DATA.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip />
-                                            <Legend verticalAlign="bottom" height={36}/>
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                </div>
-                                <div className="text-center mt-2">
-                                    <span className="text-3xl font-bold text-sky-500">73.2%</span>
-                                    <span className="text-sm text-slate-500 block">Non-Oil Sector Share</span>
-                                </div>
-                            </div>
-
-                            {/* Investment Surge */}
-                            <div className="bg-white/90 backdrop-blur-md border border-white/20 shadow-sm p-6 rounded-xl col-span-2">
-                                <div className="flex justify-between items-center mb-4">
-                                    <div>
-                                        <h3 className="text-lg font-bold text-slate-800">Energy Sector Investment</h3>
-                                        <p className="text-sm text-slate-500">Significant capital flow into clean energy</p>
-                                    </div>
-                                    <div className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-bold">
-                                        +156% Growth
-                                    </div>
-                                </div>
-                                <div className="h-64">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart data={INVESTMENT_DATA}>
-                                            <defs>
-                                                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                                                </linearGradient>
-                                            </defs>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                            <XAxis dataKey="name" />
-                                            <YAxis unit="M" />
-                                            <Tooltip />
-                                            <Area type="monotone" dataKey="value" stroke="#10b981" fillOpacity={1} fill="url(#colorValue)" />
-                                        </AreaChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Sustainability Strategy */}
-                        <div className="bg-white/90 backdrop-blur-md border border-white/20 shadow-sm p-6 rounded-xl">
-                            <h3 className="text-lg font-bold text-slate-800 mb-6">Corporate Sustainability Integration</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                <div className="relative pt-4">
-                                    <div className="text-sm text-slate-500 mb-2">ESG Adoption Rate</div>
-                                    <div className="w-full bg-slate-100 rounded-full h-4 overflow-hidden">
-                                        <div className="bg-teal-500 h-full rounded-full transition-all duration-1000" style={{width: '80%'}}></div>
-                                    </div>
-                                    <div className="flex justify-between mt-2 text-xs font-medium text-slate-600">
-                                        <span>2023: 64%</span>
-                                        <span className="text-teal-600">2024: 80%</span>
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <div className="text-sm font-bold text-slate-700">Key Drivers</div>
-                                    <div className="flex flex-wrap gap-2">
-                                        <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs border border-blue-100">Mandatory Reporting</span>
-                                        <span className="px-2 py-1 bg-purple-50 text-purple-600 rounded text-xs border border-purple-100">Access to Capital</span>
-                                        <span className="px-2 py-1 bg-orange-50 text-orange-600 rounded text-xs border border-orange-100">Talent Retention</span>
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <div className="text-sm font-bold text-slate-700">Strategic Actions</div>
-                                    <ul className="text-xs text-slate-600 space-y-1 list-disc pl-4">
-                                        <li>Green Bond Issuance ($16.7B)</li>
-                                        <li>Supply Chain Decarbonization</li>
-                                        <li>Social Impact Partnerships</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
-
-            case 'leadership':
-                return (
-                    <div className="space-y-6 animate-in fade-in duration-500">
-                        <div className="bg-gradient-to-r from-indigo-600 to-blue-600 rounded-xl p-8 text-white mb-6">
-                            <h2 className="text-2xl font-bold mb-2">Future Leadership Framework</h2>
-                            <p className="opacity-90 max-w-2xl">
-                                The region requires a shift from traditional hierarchical management to an adaptive, resilient, and value-driven approach.
-                            </p>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <CompetencyCard 
-                                title="Adaptive Resilience" 
-                                icon={ShieldCheck}
-                                description="Capacity to thrive amidst geopolitical shocks and market volatility. Viewing failure as data for improvement."
-                                tags={['Crisis Management', 'Psychological Stamina', 'Flexibility']}
-                            />
-                            <CompetencyCard 
-                                title="Cross-Cultural Fluency" 
-                                icon={Globe}
-                                description="Navigating 'high-context' communication and diverse expatriate workforces (Asia, Europe, NA)."
-                                tags={['Cultural Intelligence', 'Inclusive Teaming', 'Nuance']}
-                            />
-                            <CompetencyCard 
-                                title="Sustainability Literacy" 
-                                icon={Leaf}
-                                description="Deep understanding of ESG metrics and their correlation with financial performance and risk."
-                                tags={['ESG Reporting', 'Circular Economy', 'Long-term Value']}
-                            />
-                            <CompetencyCard 
-                                title="Systems Thinking" 
-                                icon={Target}
-                                description="Understanding interconnections, e.g., how water scarcity impacts social stability and political legitimacy."
-                                tags={['Root Cause Analysis', 'Holistic View', 'Complexity']}
-                            />
-                            <CompetencyCard 
-                                title="Strategic Foresight" 
-                                icon={BookOpen}
-                                description="Anticipating technological disruptions (AI) and pivoting business models before markets shift."
-                                tags={['Innovation', 'Scenario Planning', 'Digital Transformation']}
-                            />
-                        </div>
-                    </div>
-                );
-
-            case 'plan':
-                return (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
-                        <div className="col-span-1 lg:col-span-2">
-                            <div className="bg-white/90 backdrop-blur-md border border-white/20 shadow-sm p-8 rounded-xl">
-                                <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-                                    <Target className="text-indigo-600" />
-                                    Personal Development Roadmap
-                                </h3>
-                                <div className="space-y-0">
-                                    <TimelineItem 
-                                        year="Years 1-2"
-                                        title="Foundation & Certification"
-                                        description="Complete specialized certifications (GRI Standards/LEED). Engage in executive education focused on Middle East business practices. Attend Abu Dhabi Sustainability Week."
-                                        color="bg-blue-500"
-                                    />
-                                    <TimelineItem 
-                                        year="Years 2-3"
-                                        title="Experiential Expansion"
-                                        description="Seek diverse stakeholder projects. Volunteer for ESG committees. Build cross-sector networks across government and corporate entities."
-                                        color="bg-indigo-500"
-                                    />
-                                    <TimelineItem 
-                                        year="Years 3-5"
-                                        title="Cultural Immersion & Leadership"
-                                        description="Commit to conversational Arabic fluency. Undertake cultural immersion in different regional hubs. Mentor younger professionals."
-                                        color="bg-purple-500"
-                                    />
-                                    <TimelineItem 
-                                        year="Year 5+"
-                                        title="Thought Leadership"
-                                        description="Publish articles on renewable energy transition. Establish self as a domain expert in sustainable regional development."
-                                        color="bg-teal-500"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                        <div className="col-span-1 space-y-6">
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                                <h4 className="font-bold text-slate-800 mb-4">Accountability Metrics</h4>
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                                        <span className="text-sm text-slate-600">Quarterly Self-Assessments</span>
-                                        <ShieldCheck className="text-green-500 w-4 h-4" />
-                                    </div>
-                                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                                        <span className="text-sm text-slate-600">Annual Mentor Feedback</span>
-                                        <Users className="text-blue-500 w-4 h-4" />
-                                    </div>
-                                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                                        <span className="text-sm text-slate-600">Certification Tracking</span>
-                                        <BookOpen className="text-purple-500 w-4 h-4" />
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="bg-indigo-600 p-6 rounded-xl shadow-lg text-white">
-                                <h4 className="font-bold mb-2">Core Philosophy</h4>
-                                <p className="text-sm opacity-90 italic">
-                                    "Leading with integrity and purpose in service of a more prosperous, sustainable, and equitable Middle East."
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                );
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Middle East Leadership Dashboard | Anirudh Agarwal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #0d4a6b;
+            --secondary: #138d75;
+            --accent: #e63946;
+            --light: #f1faee;
+            --dark: #1d3557;
+            --gray: #8d99ae;
+            --transition: all 0.3s ease;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --border-radius: 12px;
         }
-    };
-
-    return (
-        <div className="flex h-screen bg-slate-50 overflow-hidden">
-            {/* Sidebar Desktop */}
-            <div className="hidden md:flex flex-col w-64 bg-slate-900 text-white shadow-xl z-10">
-                <div className="p-6 border-b border-slate-800">
-                    <h1 className="font-bold text-lg tracking-tight">Leading in Transition</h1>
-                    <p className="text-xs text-slate-400 mt-1">Middle East Strategy</p>
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: #333;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        
+        .dashboard-container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* Header Styles */
+        header {
+            background: linear-gradient(120deg, var(--primary), var(--dark));
+            color: white;
+            padding: 25px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .logo {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #a8dadc, #457b9d);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .student-info {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 8px 20px;
+            border-radius: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .student-info p {
+            font-size: 0.95rem;
+            margin: 2px 0;
+        }
+        
+        .nav-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        /* Dashboard Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 25px;
+            margin: 30px 0;
+        }
+        
+        /* Sidebar Styles */
+        .sidebar {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 25px 0;
+            height: calc(100vh - 120px);
+            position: sticky;
+            top: 100px;
+            transition: var(--transition);
+            z-index: 10;
+        }
+        
+        .sidebar-header {
+            padding: 0 25px 20px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 20px;
+        }
+        
+        .sidebar-header h3 {
+            color: var(--primary);
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .sidebar-menu {
+            list-style: none;
+            padding: 0 10px;
+        }
+        
+        .sidebar-menu li {
+            margin-bottom: 5px;
+        }
+        
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 14px 20px;
+            text-decoration: none;
+            color: #555;
+            border-radius: 8px;
+            transition: var(--transition);
+            font-weight: 500;
+            gap: 12px;
+        }
+        
+        .sidebar-menu a:hover, .sidebar-menu a.active {
+            background: rgba(13, 74, 107, 0.08);
+            color: var(--primary);
+            transform: translateX(3px);
+        }
+        
+        .sidebar-menu a i {
+            width: 24px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        
+        /* Main Content */
+        .main-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(650px, 1fr));
+            gap: 25px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 25px;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .card-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .card-icon {
+            width: 42px;
+            height: 42px;
+            background: rgba(13, 74, 107, 0.1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+        
+        .card-content {
+            padding-bottom: 10px;
+        }
+        
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(230, 57, 70, 0.05);
+            border-radius: 10px;
+            transition: var(--transition);
+        }
+        
+        .stat-item:hover {
+            background: rgba(19, 141, 117, 0.1);
+            transform: scale(1.03);
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 8px 0;
+        }
+        
+        .stat-label {
+            font-size: 0.95rem;
+            color: #666;
+        }
+        
+        .highlight {
+            background: linear-gradient(120deg, rgba(19, 141, 117, 0.15), transparent);
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-weight: 600;
+        }
+        
+        .source {
+            font-size: 0.85rem;
+            color: var(--gray);
+            margin-top: 15px;
+            font-style: italic;
+            border-left: 3px solid var(--secondary);
+            padding-left: 12px;
+        }
+        
+        .chart-container {
+            height: 300px;
+            margin: 20px 0;
+            position: relative;
+        }
+        
+        .insight-box {
+            background: rgba(13, 74, 107, 0.03);
+            border-left: 4px solid var(--secondary);
+            padding: 15px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+        }
+        
+        .insight-title {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+        
+        .region-map {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            position: relative;
+        }
+        
+        .map-container {
+            width: 100%;
+            max-width: 600px;
+            position: relative;
+        }
+        
+        .map-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(19, 141, 117, 0.1);
+            border-radius: 10px;
+            opacity: 0;
+            transition: var(--transition);
+        }
+        
+        .map-overlay.active {
+            opacity: 1;
+        }
+        
+        .map-label {
+            position: absolute;
+            font-weight: 600;
+            background: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            font-size: 0.85rem;
+        }
+        
+        .gcc {
+            top: 40%;
+            left: 65%;
+        }
+        
+        .egypt {
+            top: 55%;
+            left: 55%;
+        }
+        
+        .jordan {
+            top: 35%;
+            left: 60%;
+        }
+        
+        .sudan {
+            top: 70%;
+            left: 50%;
+        }
+        
+        .iran {
+            top: 30%;
+            left: 80%;
+        }
+        
+        /* Two-column layout for specific content */
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-top: 20px;
+        }
+        
+        /* Footer */
+        footer {
+            background: var(--dark);
+            color: white;
+            text-align: center;
+            padding: 30px 0;
+            margin-top: 40px;
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+        }
+        
+        .references {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: left;
+            padding: 0 20px;
+            font-size: 0.9rem;
+            line-height: 1.7;
+        }
+        
+        .references h3 {
+            margin-bottom: 15px;
+            color: #a8dadc;
+        }
+        
+        .reference-list {
+            columns: 2;
+            column-gap: 40px;
+        }
+        
+        .reference-item {
+            margin-bottom: 8px;
+            break-inside: avoid;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: fixed;
+                left: -300px;
+                width: 280px;
+                height: 100vh;
+                top: 80px;
+                z-index: 1000;
+            }
+            
+            .sidebar.active {
+                left: 0;
+            }
+            
+            .nav-toggle {
+                display: block;
+            }
+            
+            .overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                z-index: 999;
+                opacity: 0;
+                visibility: hidden;
+                transition: var(--transition);
+            }
+            
+            .overlay.active {
+                opacity: 1;
+                visibility: visible;
+            }
+            
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .reference-list {
+                columns: 1;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+            
+            .stat-grid {
+                grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            }
+            
+            .card {
+                padding: 20px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .stat-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-content {
+                padding: 0 15px;
+            }
+            
+            .card-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+        }
+        
+        /* Animation Classes */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate {
+            animation: fadeIn 0.6s ease forwards;
+        }
+        
+        .delay-1 { animation-delay: 0.2s; }
+        .delay-2 { animation-delay: 0.4s; }
+        .delay-3 { animation-delay: 0.6s; }
+        .delay-4 { animation-delay: 0.8s; }
+        
+        /* Theme Toggle */
+        .theme-toggle {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 100;
+            transition: var(--transition);
+        }
+        
+        .theme-toggle:hover {
+            transform: scale(1.1) rotate(20deg);
+        }
+        
+        .section-marker {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: var(--secondary);
+            width: 0;
+            transition: width 0.5s ease;
+        }
+        
+        /* Print styles */
+        @media print {
+            .sidebar, .theme-toggle, .nav-toggle {
+                display: none;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .card {
+                break-inside: avoid;
+                box-shadow: none;
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo">ME<i class="fas fa-chart-line"></i>LD</div>
+                <div class="student-info">
+                    <p><strong>Student:</strong> Anirudh Agarwal</p>
+                    <p><strong>Roll Number:</strong> MJ25GF023</p>
                 </div>
-                <nav className="flex-1 p-4 space-y-2">
-                    {[
-                        { id: 'overview', label: 'Regional Context', icon: Globe },
-                        { id: 'transition', label: 'Energy & ESG', icon: Leaf },
-                        { id: 'leadership', label: 'Competencies', icon: Users },
-                        { id: 'plan', label: 'Action Plan', icon: Target },
-                    ].map(item => (
-                        <button
-                            key={item.id}
-                            onClick={() => setActiveTab(item.id)}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                                activeTab === item.id 
-                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50' 
-                                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                            }`}
-                        >
-                            <item.icon size={18} />
-                            <span className="text-sm font-medium">{item.label}</span>
-                        </button>
-                    ))}
-                </nav>
-                <div className="p-4 border-t border-slate-800">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-xs">S</div>
-                        <div>
-                            <p className="text-xs font-bold text-white">Student Dashboard</p>
-                            <p className="text-[10px] text-slate-400">Reflective Assignment</p>
-                        </div>
+            </div>
+            <button class="nav-toggle" id="navToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </header>
+    
+    <div class="overlay" id="overlay"></div>
+    
+    <div class="dashboard-container">
+        <div class="dashboard-grid">
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-header">
+                    <h3><i class="fas fa-tachometer-alt"></i> Regional Dashboard</h3>
+                    <p>Leading in Transition: 2024-2025</p>
+                </div>
+                <ul class="sidebar-menu">
+                    <li><a href="#economic" class="active"><i class="fas fa-chart-bar"></i> Economic Fragmentation</a></li>
+                    <li><a href="#unemployment"><i class="fas fa-users"></i> Youth Unemployment</a></li>
+                    <li><a href="#geopolitics"><i class="fas fa-globe-asia"></i> Geopolitical Impact</a></li>
+                    <li><a href="#energy"><i class="fas fa-solar-panel"></i> Energy Transition</a></li>
+                    <li><a href="#sustainability"><i class="fas fa-leaf"></i> Sustainable Investments</a></li>
+                    <li><a href="#esg"><i class="fas fa-recycle"></i> ESG Adoption</a></li>
+                    <li><a href="#leadership"><i class="fas fa-user-tie"></i> Leadership Requirements</a></li>
+                    <li><a href="#references"><i class="fas fa-book"></i> References</a></li>
+                </ul>
+            </aside>
+            
+            <main class="main-content">
+                <!-- Economic Fragmentation Section -->
+                <section class="card animate" id="economic">
+                    <div class="section-marker"></div>
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fas fa-chart-bar"></i> Economic Fragmentation & Fiscal Pressures</h2>
+                        <span class="card-icon"><i class="fas fa-coins"></i></span>
                     </div>
-                </div>
-            </div>
-
-            {/* Mobile Menu Button */}
-            <div className="md:hidden fixed top-4 right-4 z-50">
-                <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 bg-slate-900 text-white rounded-lg shadow-lg">
-                    <Menu size={24} />
-                </button>
-            </div>
-
-            {/* Mobile Nav Overlay */}
-            {mobileMenuOpen && (
-                <div className="md:hidden fixed inset-0 bg-slate-900 z-40 p-6 pt-20 space-y-4">
-                        {[
-                        { id: 'overview', label: 'Regional Context', icon: Globe },
-                        { id: 'transition', label: 'Energy & ESG', icon: Leaf },
-                        { id: 'leadership', label: 'Competencies', icon: Users },
-                        { id: 'plan', label: 'Action Plan', icon: Target },
-                    ].map(item => (
-                        <button
-                            key={item.id}
-                            onClick={() => { setActiveTab(item.id); setMobileMenuOpen(false); }}
-                            className={`w-full flex items-center gap-3 px-4 py-4 rounded-lg text-left ${
-                                activeTab === item.id ? 'bg-indigo-600 text-white' : 'text-slate-400'
-                            }`}
-                        >
-                            <item.icon size={20} />
-                            <span className="text-lg">{item.label}</span>
-                        </button>
-                    ))}
-                </div>
-            )}
-
-            {/* Main Content */}
-            <main className="flex-1 overflow-auto p-4 md:p-8 lg:p-10">
-                <div className="max-w-6xl mx-auto pb-20">
-                    <header className="mb-8">
-                        <h2 className="text-3xl font-bold text-slate-800">
-                            {activeTab === 'overview' && 'Regional Context & Challenges'}
-                            {activeTab === 'transition' && 'Energy Transition & Diversification'}
-                            {activeTab === 'leadership' && 'Leadership Framework'}
-                            {activeTab === 'plan' && 'Personal Development Roadmap'}
-                        </h2>
-                        <p className="text-slate-500 mt-2">
-                            {activeTab === 'overview' && 'Analyzing economic fragmentation and demographic shifts.'}
-                            {activeTab === 'transition' && 'Tracking the shift from hydrocarbon dependence to sustainable growth.'}
-                            {activeTab === 'leadership' && 'Defining the essential skills for the next generation of leaders.'}
-                            {activeTab === 'plan' && 'Strategic steps for professional growth (Years 1-5).'}
-                        </p>
-                    </header>
-                    
-                    {renderContent()}
-
-                    <footer className="mt-12 pt-8 border-t border-slate-200 text-center text-xs text-slate-400">
-                        <p>Data Sources: World Bank, PwC, Wilson Center, Economic Research Forum (2024-2025)</p>
-                    </footer>
-                </div>
+                    <div class="card-content">
+                        <p>The Middle East's economic landscape reveals stark contrasts between oil-exporting GCC nations and struggling developing economies. While GCC projects <span class="highlight">3.2% GDP growth in 2025</span>, driven by non-oil sectors, neighboring economies face catastrophic inflation and debt burdens.</p>
+                        
+                        <div class="stat-grid">
+                            <div class="stat-item">
+                                <div class="stat-value">3.2%</div>
+                                <div class="stat-label">GCC Growth (2025)</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">119%</div>
+                                <div class="stat-label">Sudan Inflation</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">29%</div>
+                                <div class="stat-label">Iran Inflation</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">91%</div>
+                                <div class="stat-label">Egypt Debt/GDP</div>
+                            </div>
+                        </div>
+                        
+                        <div class="chart-container">
+                            <canvas id="economicChart"></canvas>
+                        </div>
+                        
+                        <div class="insight-box">
+                            <div class="insight-title">Strategic Insight</div>
+                            <p>For consultants and multinationals, fiscal realities in non-GCC states carry increased payment risk and demand careful due diligence. Inflationary pressures destroy purchasing power and destabilize currencies, requiring dynamic pricing strategies and effective supply chain hedging.</p>
+                        </div>
+                        
+                        <div class="source">Source: ICAEW (2024), Wilson Center (2025), World Bank (2024)</div>
+                    </div>
+                </section>
+                
+                <!-- Youth Unemployment Section -->
+                <section class="card animate delay-1" id="unemployment">
+                    <div class="section-marker"></div>
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fas fa-users"></i> Youth Unemployment Crisis</h2>
+                        <span class="card-icon"><i class="fas fa-user-graduate"></i></span>
+                    </div>
+                    <div class="card-content">
+                        <p>Youth unemployment represents both an economic inefficiency and potential source of instability across the MENA region. Rates vary dramatically, with Jordan and Libya exceeding <span class="highlight">45%</span> while GCC nations maintain single-digit rates.</p>
+                        
+                        <div class="two-column">
+                            <div>
+                                <div class="stat-grid">
+                                    <div class="stat-item">
+                                        <div class="stat-value">46%</div>
+                                        <div class="stat-label">Jordan Youth Unemployment</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-value">66%</div>
+                                        <div class="stat-label">Young Women in Jordan</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-value">19.6%</div>
+                                        <div class="stat-label">MENA Average</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-value">8.2%</div>
+                                        <div class="stat-label">UAE Rate</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="unemploymentChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="insight-box">
+                            <div class="insight-title">Strategic Insight</div>
+                            <p>Future strategies must move beyond token "nationalization" quotas toward real capacity building. Business leaders must design labor-absorptive business models that transform this demographic "burden" into a dividend through innovative workforce development programs.</p>
+                        </div>
+                        
+                        <div class="source">Source: Economic Research Forum (2025), World Bank (2024)</div>
+                    </div>
+                </section>
+                
+                <!-- Geopolitical Section -->
+                <section class="card animate delay-2" id="geopolitics">
+                    <div class="section-marker"></div>
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fas fa-globe-asia"></i> Geopolitical Volatility & Regional Conflicts</h2>
+                        <span class="card-icon"><i class="fas fa-map-marked-alt"></i></span>
+                    </div>
+                    <div class="card-content">
+                        <p>The post-October 2023 geopolitical landscape has deteriorated significantly with the Gaza conflict and proxy wars creating widespread instability. Business impacts manifest as disrupted supply chains, reluctant capital flows, and revenue losses for critical infrastructure.</p>
+                        
+                        <div class="region-map">
+                            <div class="map-container">
+                                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDYwMCA0MDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHJlY3Qgd2lkdGg9IjYwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiNmNWY1ZjUiIHN0cm9rZT0iI2RkZCIgc3Ryb2tlLXdpZHRoPSIxIi8+CiAgPHBhdGggZD0iTTI1MCAxMDAgQzI3MCAxMjAgMzAwIDEzNSAzNTAgMTIwIDQwMCAxMDUgNDUwIDkwIDUwMCAxMjAgNTUwIDE1MCA1NTAgMjAwIDU1MCAyNTAgNTAwIDMwMCA0NTAgMzIwIDQwMCAzNTAgMzUwIDM4MCAzMDAgNDAwIDI1MCAzOTAgMjAwIDM4MCAxNTAgMzcwIDEwMCAzMjAgODAgMjgwIDYwIDI0MCA1MCAyMDAgNTAgMTUwIDgwIDEwMCAxMDAgNzUgMTI1IDI1MCAxMDAgWiIgZmlsbD0iI2U4ZjVmZSIgc3Ryb2tlPSIjMDQ2NmM4IiBzdHJva2Utd2lkdGg9IjIiLz4KICA8Y2lyY2xlIGN4PSI0NTAiIGN5PSIxNTAiIHI9IjE1IiBmaWxsPSIjZTYzOTQ2IiBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iMiIvPgogIDx0ZXh0IHg9IjQ1MCIgeT0iMTUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiNmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkdhemE8L3RleHQ+CiAgPGNpcmNsZSBjeD0iMzUwIiBjeT0iMjIwIiByPSIxMCIgZmlsbD0iI2U2Mzk0NiIvPgogIDx0ZXh0IHg9IjM1MCIgeT0iMjIwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiMzMzMiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkhvdXRoaTwvdGV4dD4KICA8Y2lyY2xlIGN4PSI0MDAiIGN5PSIxODAiIHI9IjEwIiBmaWxsPSIjZTYzOTQ2Ii8+CiAgPHRleHQgeD0iNDAwIiB5PSIxODAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SGV6Ym9sbGFoPC90ZXh0PgogIDxsaW5lIHgxPSIzMDAiIHkxPSIzMDAiIHgyPSIzNTAiIHkyPSIzMDAiIHN0cm9rZT0iI2U2Mzk0NiIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtZGFzaGFycmF5PSI1LDUiLz4KICA8dGV4dCB4PSIzMjUiIHk9IjMyMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZTYzOTQ2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5TdWV6IENhbmFsPC90ZXh0PgogIDx0ZXh0IHg9IjE3MCIgeT0iMjUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiMwZDRhNmIiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkVneXB0PC90ZXh0PgogIDx0ZXh0IHg9IjQ1MCIgeT0iMjUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiMwZDRhNmIiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkdDQyBDb3VudHJpZXM8L3RleHQ+CiAgPHRleHQgeD0iMTUwIiB5PSIxNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzBkNGE2YiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SnVyZGFuPC90ZXh0PgogIDx0ZXh0IHg9IjUwMCIgeT0iMTUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiMwZDRhNmIiIHRleHQtYW5jaG9yPSJtaWRkbGUiPklyYW48L3RleHQ+CiAgPHRleHQgeD0iNTUwIiB5PSIzMDAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzBkNGE2YiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+T21hbjwvdGV4dD4KPC9zdmc+" alt="Middle East Region Map" style="width: 100%; border-radius: 10px; border: 1px solid #ddd;">
+                                <div class="map-overlay" id="mapOverlay">
+                                    <div style="text-align: center; padding: 15px;">
+                                        <h3 style="color: var(--primary); margin-bottom: 10px;">Regional Conflict Impact</h3>
+                                        <p style="margin-bottom: 8px;">Suez Canal revenue dropped by <strong>60%</strong> due to Red Sea shipping disruptions</p>
+                                        <p style="margin-bottom: 8px;">GCC countries maintained growth despite regional instability</p>
+                                        <p>Supply chain diversification is critical for business resilience</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="insight-box">
+                            <div class="insight-title">Strategic Insight</div>
+                            <p>Geopolitical risk assessment is no longer optional for consultants. Leaders must create resilient organizations that can operate amid uncertainty by diversifying logistics routes and insulating core operations from political shocks.</p>
+                        </div>
+                        
+                        <div class="source">Source: Atlantic Council (2024), Wilson Center (2025)</div>
+                    </div>
+                </section>
+                
+                <!-- Energy Transition Section -->
+                <section class="card animate delay-3" id="energy">
+                    <div class="section-marker"></div>
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fas fa-solar-panel"></i> Energy Transition & Economic Diversification</h2>
+                        <span class="card-icon"><i class="fas fa-exchange-alt"></i></span>
+                    </div>
+                    <div class="card-content">
+                        <p>The Middle East is undergoing a fundamental restructuring from hydrocarbon dependency toward climate-compatible, technologically advanced economies. Non-oil sectors now represent <span class="highlight">73.2% of GCC GDP</span>, up from 70.6% in 2024.</p>
+                        
+                        <div class="stat-grid">
+                            <div class="stat-item">
+                                <div class="stat-value">73.2%</div>
+                                <div class="stat-label">Non-Oil GCC GDP (Q1 2025)</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">50%</div>
+                                <div class="stat-label">Saudi Renewable Target (2030)</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">16 GW</div>
+                                <div class="stat-label">Saudi Solar Imports (2024)</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">42%</div>
+                                <div class="stat-label">Global Renewable Electricity (2028)</div>
+                            </div>
+                        </div>
+                        
+                        <div class="chart-container">
+                            <canvas id="energyChart"></canvas>
+                        </div>
+                        
+                        <div class="insight-box">
+                            <div class="insight-title">Strategic Insight</div>
+                            <p>While the region embraces renewable energy, seven major oil producers have breakeven oil prices over $78/barrel, creating fiscal pressures that may limit government spending on diversification precisely when it's most needed.</p>
+                        </div>
+                        
+                        <div class="source">Source: Funds Global MENA (2025), Stimson Center (2024), Arab News (2025)</div>
+                    </div>
+                </section>
+                
+                <!-- Sustainability Investments Section -->
+                <section class="card animate delay-4" id="sustainability">
+                    <div class="section-marker"></div>
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fas fa-leaf"></i> Sustainable Investments & Green Economy</h2>
+                        <span class="card-icon"><i class="fas fa-hand-holding-usd"></i></span>
+                    </div>
+                    <div class="card-content">
+                        <p>Commitment to sustainable development is backed by significant capital allocation. The region is positioning itself as a green hydrogen exporter while sovereign wealth funds drive sustainable finance innovation.</p>
+                        
+                        <div class="two-column">
+                            <div>
+                                <div class="stat-grid">
+                                    <div class="stat-item">
+                                        <div class="stat-value">$16.7B</div>
+                                        <div class="stat-label">Sustainable Bonds (9M 2024)</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-value">156%</div>
+                                        <div class="stat-label">Energy Climate Tech Growth</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-value">$3.7T</div>
+                                        <div class="stat-label">GCC Infrastructure Pipeline</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-value">$78</div>
+                                        <div class="stat-label">Oil Breakeven Price (Avg)</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="sustainabilityChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="insight-box">
+                            <div class="insight-title">Strategic Insight</div>
+                            <p>This investment landscape creates significant demand for project management and sustainability consulting expertise. However, if regional economies don't diversify rapidly enough, they risk economic marginalization as global energy systems shift.</p>
+                        </div>
+                        
+                        <div class="source">Source: PwC (2024, 2025), European Financial Review (2024), Zero Carbon Analytics (2024)</div>
+                    </div>
+                </section>
+                
+                <!-- ESG Adoption Section -->
+                <section class="card animate delay-1" id="esg">
+                    <div class="section-marker"></div>
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fas fa-recycle"></i> Corporate ESG Adoption</h2>
+                        <span class="card-icon"><i class="fas fa-balance-scale"></i></span>
+                    </div>
+                    <div class="card-content">
+                        <p>ESG integration has accelerated dramatically across Middle Eastern corporations, moving from niche specialization to core business competency driven by regulatory pressures and market competitiveness.</p>
+                        
+                        <div class="stat-grid">
+                            <div class="stat-item">
+                                <div class="stat-value">80%</div>
+                                <div class="stat-label">Companies with ESG Strategies</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">64%</div>
+                                <div class="stat-label">Previous Year (2023)</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">75%</div>
+                                <div class="stat-label">Planning to Increase CSR</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">70%</div>
+                                <div class="stat-label">Global Economy Reporting</div>
+                            </div>
+                        </div>
+                        
+                        <div class="chart-container">
+                            <canvas id="esgChart"></canvas>
+                        </div>
+                        
+                        <div class="two-column" style="margin-top: 20px;">
+                            <div>
+                                <h3 style="color: var(--primary); margin-bottom: 12px;"><i class="fas fa-industry"></i> Sector Applications</h3>
+                                <ul style="padding-left: 20px; line-height: 1.8;">
+                                    <li><strong>Finance:</strong> PIF issuing multibillion-dollar green bonds</li>
+                                    <li><strong>Construction:</strong> $3.7T pipeline adopting circular economy principles</li>
+                                    <li><strong>Energy:</strong> Saudi Aramco's $1.5B sustainability fund (2022)</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h3 style="color: var(--primary); margin-bottom: 12px;"><i class="fas fa-user-cog"></i> Leadership Role</h3>
+                                <ul style="padding-left: 20px; line-height: 1.8;">
+                                    <li>Advocacy: Making business case to skeptical stakeholders</li>
+                                    <li>Operational Integration: Beyond CSR departments</li>
+                                    <li>Stakeholder Engagement: Building coalitions</li>
+                                    <li>Ethical Decision-Making: Profitability vs. environment</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="source">Source: PwC (2024), CSE (2024), Business Chief (2024)</div>
+                    </div>
+                </section>
+                
+                <!-- Leadership Requirements Section -->
+                <section class="card animate delay-2" id="leadership">
+                    <div class="section-marker"></div>
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fas fa-user-tie"></i> Future Leadership Requirements</h2>
+                        <span class="card-icon"><i class="fas fa-brain"></i></span>
+                    </div>
+                    <div class="card-content">
+                        <p>The complex Middle Eastern environment demands leadership capabilities fundamentally different from those needed in stable contexts. Success requires adaptive mindsets and specialized competencies.</p>
+                        
+                        <div class="stat-grid">
+                            <div class="stat-item">
+                                <div class="stat-value">50%</div>
+                                <div class="stat-label">Higher Profitability for Resilient Orgs</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">$123B</div>
+                                <div class="stat-label">Combined FDI (Egypt, UAE, KSA)</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">4</div>
+                                <div class="stat-label">Core Competencies Required</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">75%</div>
+                                <div class="stat-label">Companies Prioritizing Talent Attraction</div>
+                            </div>
+                        </div>
+                        
+                        <div class="chart-container">
+                            <canvas id="leadershipChart"></canvas>
+                        </div>
+                        
+                        <div class="two-column" style="margin-top: 25px;">
+                            <div>
+                                <h3 style="color: var(--primary); margin-bottom: 15px; display: flex; align-items: center; gap: 10px;"><i class="fas fa-sync-alt"></i> Adaptive Leadership</h3>
+                                <p>Ability to mobilize people to address complex challenges amid uncertainty. Leaders must replace rigid plans with flexible approaches while maintaining morale during setbacks.</p>
+                                
+                                <h3 style="color: var(--primary); margin: 25px 0 15px; display: flex; align-items: center; gap: 10px;"><i class="fas fa-globe"></i> Cross-Cultural Competence</h3>
+                                <p>Managing diverse expatriate workforces and global investors requires understanding "high context" communication, hierarchical structures, and respect for traditions.</p>
+                            </div>
+                            <div>
+                                <h3 style="color: var(--primary); margin-bottom: 15px; display: flex; align-items: center; gap: 10px;"><i class="fas fa-leaf"></i> Sustainability Literacy</h3>
+                                <p>Integrating environmental factors with financial metrics. Systems thinking reveals interconnections (e.g., water scarcity impacts on social stability).</p>
+                                
+                                <h3 style="color: var(--primary); margin: 25px 0 15px; display: flex; align-items: center; gap: 10px;"><i class="fas fa-lightbulb"></i> Strategic Foresight</h3>
+                                <p>Anticipating technological disruption while fostering psychological safety for experimentation and scaling successful innovations.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="source">Source: Atlantic Council (2024), Dubai DET (2024), Cross Culture (2024), University of Bath (2024)</div>
+                    </div>
+                </section>
             </main>
         </div>
-    );
-}
+    </div>
+    
+    <footer id="references">
+        <div class="references">
+            <h3><i class="fas fa-book"></i> References</h3>
+            <div class="reference-list">
+                <div class="reference-item">AECOM. (2024). MENA economic review 2024. https://publications.aecom.com/MEH/report/mena-economic-review-2024/</div>
+                <div class="reference-item">Arab News. (2025, January 15). Saudi Arabia reports record non-oil exports. https://www.arabnews.com/node/2619799/business-economy</div>
+                <div class="reference-item">Atlantic Council. (2024, December 19). 2024: A year in the Middle East. https://www.atlanticcouncil.org/blogs/menasource/2024-a-year-in-the-middle-east/</div>
+                <div class="reference-item">Bracewell LLP. (2025, September 15). Renewables rise in the Middle East. https://www.bracewell.com/resources/renewables-rise-in-the-middle-east/</div>
+                <div class="reference-item">Business Chief. (2023, March 5). CSR efforts grow in MENA as people, planet prioritised. https://businesschief.eu/sustainability/csr-efforts-grow-in-mena-as-people-planet-prioritised</div>
+                <div class="reference-item">Crowell & Moring LLP. (2025, September 24). The Middle East's big bet on artificial intelligence and data security. https://www.crowell.com/en/insights/client-alerts/the-middle-easts-big-bet-on-artificial-intelligence-and-data-security</div>
+                <div class="reference-item">Economic Research Forum. (2025, February 24). A macroeconomic accounting of unemployment in Jordan. https://theforum.erf.org.eg/2025/02/24/a-macroeconomic-accounting-of-unemployment-in-jordan-unemployment-is-mainly-an-issue-for-adults-and-men/</div>
+                <div class="reference-item">Ember. (2024). Middle East electricity data. https://ember-energy.org/countries-and-regions/middle-east/</div>
+                <div class="reference-item">Funds Global MENA. (2025, April). GCC economies poised for growth as non-oil sectors expand. https://www.fundsglobalmena.com/gcc-economies-poised-for-growth-as-non-oil-sectors-expand/</div>
+                <div class="reference-item">ICAEW. (2024). Business confidence monitor: Middle East. https://www.icaew.com/technical/economy/business-confidence-monitor/middle-east</div>
+                <div class="reference-item">PwC Middle East. (2024). 2024 Middle East climate tech report. https://www.pwc.com/m1/en/publications/2024-middle-east-climate-tech-report.html</div>
+                <div class="reference-item">PwC Middle East. (2025). Capital projects and infrastructure survey 2025. https://www.pwc.com/m1/en/publications/capital-projects-and-infrastructure-survey-2025.html</div>
+                <div class="reference-item">Stimson Center. (2024). How will the Middle East navigate an accelerating transition from fossil fuels? https://www.stimson.org/2024/how-will-the-middle-east-navigate-an-accelerating-transition-from-fossil-fuels/</div>
+                <div class="reference-item">Wilson Center. (2025, March 18). Economic challenges in the Middle East in 2025. https://www.wilsoncenter.org/article/economic-challenges-middle-east-2025</div>
+                <div class="reference-item">World Bank. (2024, October). Middle East and North Africa economic update. https://www.worldbank.org/en/region/mena/publication/middle-east-and-north-africa-economic-update-archiveoctober2024</div>
+            </div>
+        </div>
+    </footer>
+    
+    <div class="theme-toggle" id="themeToggle">
+        <i class="fas fa-moon"></i>
+    </div>
+    
+    <script>
+        // Initialize Charts
+        document.addEventListener('DOMContentLoaded', function() {
+            // Economic Fragmentation Chart
+            const economicCtx = document.getElementById('economicChart').getContext('2d');
+            new Chart(economicCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['GCC', 'Sudan', 'Iran', 'Egypt', 'Jordan', 'Libya'],
+                    datasets: [{
+                        label: 'GDP Growth (%)',
+                        data: [3.2, -18.5, 1.2, 2.8, -2.1, -5.3],
+                        backgroundColor: [
+                            'rgba(19, 141, 117, 0.8)',
+                            'rgba(230, 57, 70, 0.8)',
+                            'rgba(230, 57, 70, 0.8)',
+                            'rgba(255, 159, 64, 0.8)',
+                            'rgba(230, 57, 70, 0.8)',
+                            'rgba(230, 57, 70, 0.8)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'GDP Growth Projections 2025 (Selected Countries)',
+                            font: {
+                                size: 16
+                            }
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Growth Rate (%)'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Youth Unemployment Chart
+            const unemploymentCtx = document.getElementById('unemploymentChart').getContext('2d');
+            new Chart(unemploymentCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['Jordan', 'Libya', 'Egypt', 'Saudi Arabia', 'UAE', 'Bahrain', 'Oman', 'Qatar'],
+                    datasets: [{
+                        label: 'Youth Unemployment Rate (%)',
+                        data: [46, 48, 25, 12, 8.2, 9.5, 15, 6.8],
+                        fill: true,
+                        backgroundColor: 'rgba(13, 74, 107, 0.2)',
+                        borderColor: 'rgba(13, 74, 107, 1)',
+                        pointBackgroundColor: 'rgba(13, 74, 107, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(13, 74, 107, 1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Youth Unemployment Rates Across MENA Region',
+                            font: {
+                                size: 16
+                            }
+                        }
+                    },
+                    scales: {
+                        r: {
+                            angleLines: {
+                                display: true
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 60
+                        }
+                    }
+                }
+            });
+            
+            // Energy Transition Chart
+            const energyCtx = document.getElementById('energyChart').getContext('2d');
+            new Chart(energyCtx, {
+                type: 'line',
+                data: {
+                    labels: ['2020', '2022', '2024', '2026 (est)', '2028 (est)', '2030 (est)'],
+                    datasets: [{
+                        label: 'Renewable Energy Share (%)',
+                        data: [5, 10, 18, 28, 37, 50],
+                        borderColor: 'rgba(19, 141, 117, 1)',
+                        backgroundColor: 'rgba(19, 141, 117, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Oil Dependency (%)',
+                        data: [95, 88, 80, 70, 60, 45],
+                        borderColor: 'rgba(230, 57, 70, 1)',
+                        backgroundColor: 'rgba(230, 57, 70, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'GCC Energy Mix Transition (2020-2030)',
+                            font: {
+                                size: 16
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            suggestedMin: 0,
+                            suggestedMax: 100,
+                            title: {
+                                display: true,
+                                text: 'Energy Mix (%)'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Sustainability Investments Chart
+            const sustainabilityCtx = document.getElementById('sustainabilityChart').getContext('2d');
+            new Chart(sustainabilityCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Green Bonds', 'Climate Tech', 'Infrastructure', 'Hydrogen Projects', 'Other'],
+                    datasets: [{
+                        label: 'Investment Distribution',
+                        data: [25, 15, 45, 10, 5],
+                        backgroundColor: [
+                            'rgba(19, 141, 117, 0.8)',
+                            'rgba(255, 159, 64, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(153, 102, 255, 0.8)',
+                            'rgba(201, 203, 207, 0.8)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Sustainable Investment Distribution in MENA (2024)',
+                            font: {
+                                size: 16
+                            }
+                        },
+                        legend: {
+                            position: 'right',
+                        }
+                    }
+                }
+            });
+            
+            // ESG Adoption Chart
+            const esgCtx = document.getElementById('esgChart').getContext('2d');
+            new Chart(esgCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['2020', '2021', '2022', '2023', '2024'],
+                    datasets: [{
+                        label: 'Companies with Formal ESG Strategies (%)',
+                        data: [28, 42, 55, 64, 80],
+                        backgroundColor: 'rgba(19, 141, 117, 0.7)',
+                        borderColor: 'rgba(19, 141, 117, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'ESG Strategy Adoption in MENA Corporations',
+                            font: {
+                                size: 16
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Adoption Rate (%)'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Leadership Requirements Chart
+            const leadershipCtx = document.getElementById('leadershipChart').getContext('2d');
+            new Chart(leadershipCtx, {
+                type: 'polarArea',
+                data: {
+                    labels: ['Adaptive Leadership', 'Cross-Cultural Competence', 'Sustainability Literacy', 'Strategic Foresight'],
+                    datasets: [{
+                        label: 'Importance Rating',
+                        data: [95, 92, 88, 85],
+                        backgroundColor: [
+                            'rgba(13, 74, 107, 0.7)',
+                            'rgba(54, 162, 235, 0.7)',
+                            'rgba(19, 141, 117, 0.7)',
+                            'rgba(255, 159, 64, 0.7)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Critical Leadership Competencies for MENA Region',
+                            font: {
+                                size: 16
+                            }
+                        },
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        r: {
+                            suggestedMin: 0,
+                            suggestedMax: 100
+                        }
+                    }
+                }
+            });
+            
+            // Interactive Elements
+            const mapContainer = document.querySelector('.map-container');
+            const mapOverlay = document.getElementById('mapOverlay');
+            
+            mapContainer.addEventListener('mouseenter', () => {
+                mapOverlay.classList.add('active');
+            });
+            
+            mapContainer.addEventListener('mouseleave', () => {
+                mapOverlay.classList.remove('active');
+            });
+            
+            // Navigation
+            const navToggle = document.getElementById('navToggle');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            
+            navToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('active');
+            });
+            
+            overlay.addEventListener('click', () => {
+                sidebar.classList.remove('active');
+                overlay.classList.remove('active');
+            });
+            
+            // Theme Toggle
+            const themeToggle = document.getElementById('themeToggle');
+            themeToggle.addEventListener('click', () => {
+                document.body.classList.toggle('dark-mode');
+                const icon = themeToggle.querySelector('i');
+                if (document.body.classList.contains('dark-mode')) {
+                    icon.classList.remove('fa-moon');
+                    icon.classList.add('fa-sun');
+                    document.body.style.background = 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)';
+                } else {
+                    icon.classList.remove('fa-sun');
+                    icon.classList.add('fa-moon');
+                    document.body.style.background = 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)';
+                }
+            });
+            
+            // Section highlighting
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', () => {
+                    const marker = card.querySelector('.section-marker');
+                    marker.style.width = '100%';
+                });
+                
+                card.addEventListener('mouseleave', () => {
+                    const marker = card.querySelector('.section-marker');
+                    marker.style.width = '0';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
